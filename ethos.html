@@ -9,7 +9,6 @@
 <style>
     :root {
         --neon-green: #00ff9d;
-        --neon-cyan: #00f7ff;
         --neon-pink: #ff00ff;
         --bg: #0a0a12;
     }
@@ -22,9 +21,7 @@
         overflow: hidden;
         position: relative;
     }
-
     canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.4; }
-
     header {
         position: relative;
         z-index: 20;
@@ -35,9 +32,7 @@
         justify-content: space-between;
         align-items: center;
     }
-
-    .logo { font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; color: var(--neon-green); }
-
+    .logo { font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; }
     .controls { display: flex; gap: 12px; }
     input, button {
         background: rgba(0,0,0,0.8);
@@ -45,18 +40,12 @@
         color: var(--neon-green);
         padding: 12px 20px;
         border-radius: 50px;
-        font-family: inherit;
-    }
-    button {
-        cursor: pointer;
-        transition: all 0.3s;
     }
     button:hover {
         background: var(--neon-pink);
         color: #000;
         transform: scale(1.05);
     }
-
     .games-container {
         position: relative;
         z-index: 10;
@@ -67,7 +56,6 @@
         max-height: calc(100vh - 180px);
         overflow-y: auto;
     }
-
     .game-card {
         background: rgba(15,20,35,0.9);
         border: 2px solid var(--neon-green);
@@ -81,7 +69,6 @@
         border-color: var(--neon-pink);
         box-shadow: 0 0 40px var(--neon-pink);
     }
-
     .game-logo {
         width: 100%;
         height: 160px;
@@ -90,23 +77,11 @@
         border-radius: 12px;
         margin-bottom: 15px;
     }
-
-    .scanline {
-        position: fixed;
-        inset: 0;
-        z-index: 5;
-        pointer-events: none;
-        background: repeating-linear-gradient(transparent 0px, transparent 4px, rgba(0,255,150,0.05) 4px, rgba(0,255,150,0.05) 8px);
-        animation: scan 8s linear infinite;
-    }
-
-    @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(300%); } }
 </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
-<div class="scanline"></div>
 
 <header>
     <div class="logo">ETHOS_<span style="color:var(--neon-pink)">PLAYER</span></div>
@@ -114,6 +89,7 @@
         <input type="text" id="searchBar" placeholder="BUSCAR JUEGO..." style="width:280px;">
         <button onclick="openEthosAI()">ETHOS AI</button>
         <button onclick="openSpotify()">SPOTIFY</button>
+        <button onclick="window.location.href='admin.html'">ADMIN</button>
     </div>
 </header>
 
@@ -121,7 +97,7 @@
 <div style="position:fixed; bottom:25px; right:40px; z-index:30; font-size:1.3rem;" id="counter">0 JUEGOS</div>
 
 <script>
-// === Firebase Config ===
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBEtMYOTg4fBGyShbULdGCuW76nwlUIfiI",
   authDomain: "ethosgames-a1bc1.firebaseapp.com",
@@ -134,61 +110,52 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// === Matrix suave (menos invasivo) ===
+let juegos = [];
+const contenedor = document.getElementById("listaJuegos");
+const searchBar = document.getElementById("searchBar");
+
+// Matrix suave
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 let w, h;
 function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
 resize(); window.addEventListener('resize', resize);
-
 function drawMatrix() {
     ctx.fillStyle = 'rgba(10,12,20,0.15)';
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#00ff9d';
     ctx.font = '14px monospace';
-    // Matrix ligera...
 }
 setInterval(drawMatrix, 80);
 
-// === Cargar Juegos desde Firebase ===
-let juegos = [];
-let currentCat = "ALL";
-let favoritos = JSON.parse(localStorage.getItem("ethos_favs")) || [];
-
-const contenedor = document.getElementById("listaJuegos");
-const searchBar = document.getElementById("searchBar");
-
+// Cargar Juegos (colección "games")
 async function cargarJuegos() {
     try {
-        const snapshot = await db.collection("juegos").get();
+        const snapshot = await db.collection("games").get();
         juegos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
         mostrarJuegos();
     } catch (e) {
-        console.error("Error cargando juegos:", e);
-        contenedor.innerHTML = "<p style='color:#ff5555; grid-column:1/-1; text-align:center;'>Error al cargar juegos desde Firebase</p>";
+        console.error(e);
+        contenedor.innerHTML = "<p style='color:#ff5555; text-align:center; grid-column:1/-1;'>Error al cargar juegos</p>";
     }
 }
 
 function mostrarJuegos(filtro = "") {
     contenedor.innerHTML = "";
-
     const filtrados = juegos.filter(j => 
-        j.nombre.toLowerCase().includes(filtro.toLowerCase())
+        j.nombre && j.nombre.toLowerCase().includes(filtro.toLowerCase())
     );
 
     filtrados.forEach(juego => {
         const div = document.createElement("div");
         div.className = "game-card";
-
-        const logo = juego.logo || "https://via.placeholder.com/300x160/112233/00ff9d?text=" + juego.nombre;
+        const logo = juego.logo || "https://via.placeholder.com/300x160/112233/00ff9d?text=" + (juego.nombre || "GAME");
 
         div.innerHTML = `
             <img src="${logo}" class="game-logo" alt="${juego.nombre}">
             <div style="font-size:1.5rem; margin:10px 0;">${juego.nombre}</div>
-            <div style="opacity:0.7;">${juego.tag || ''}</div>
+            <div style="opacity:0.7;">${juego.category || juego.tag || ''}</div>
         `;
-
         div.onclick = () => abrirJuego(juego.url);
         contenedor.appendChild(div);
     });
@@ -198,7 +165,7 @@ function mostrarJuegos(filtro = "") {
 
 function abrirJuego(url) {
     const win = window.open("about:blank", "_blank");
-    win.document.write(`<html><body style="margin:0;background:#000"><iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></body></html>`);
+    win.document.write(`<html><body style="margin:0;background:#000;height:100vh"><iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></body></html>`);
     win.document.close();
 }
 
