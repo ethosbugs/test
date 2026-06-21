@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETHOS • ADMIN PANEL</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+    :root { --neon-green: #00ff9d; --neon-pink: #ff00ff; --bg: #0a0a12; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        background: var(--bg);
+        color: var(--neon-green);
+        font-family: 'Courier New', monospace;
+        padding: 20px;
+    }
+    h1 { text-align:center; margin-bottom:30px; color:var(--neon-pink); }
+    input, textarea, button {
+        background: rgba(0,0,0,0.7);
+        border: 2px solid var(--neon-green);
+        color: var(--neon-green);
+        padding: 12px;
+        margin: 8px 0;
+        width: 100%;
+        border-radius: 8px;
+    }
+    button {
+        cursor: pointer;
+        font-weight: bold;
+    }
+    button:hover { background: var(--neon-pink); color: #000; }
+    .game-list { margin-top: 40px; }
+    .game-item {
+        background: rgba(20,25,40,0.9);
+        padding: 15px;
+        margin: 10px 0;
+        border: 1px solid var(--neon-green);
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+</head>
+<body>
+
+<h1>ETHOS ADMIN PANEL</h1>
+
+<div>
+    <h2>Añadir / Editar Juego</h2>
+    <input type="text" id="nombre" placeholder="Nombre del juego">
+    <input type="text" id="url" placeholder="URL del juego">
+    <input type="text" id="tag" placeholder="Tag / Categoría (ej: Acción, Arcade)">
+    <input type="text" id="logo" placeholder="Link de imagen (logo)">
+    <button onclick="guardarJuego()">GUARDAR JUEGO</button>
+</div>
+
+<div class="game-list">
+    <h2>Juegos Existentes</h2>
+    <div id="listaAdmin"></div>
+</div>
+
+<script>
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyBEtMYOTg4fBGyShbULdGCuW76nwlUIfiI",
+  authDomain: "ethosgames-a1bc1.firebaseapp.com",
+  projectId: "ethosgames-a1bc1",
+  storageBucket: "ethosgames-a1bc1.firebasestorage.app",
+  messagingSenderId: "877649560017",
+  appId: "1:877649560017:web:598a7bc006323627ab60f0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let editId = null;
+
+// Guardar o actualizar juego
+async function guardarJuego() {
+    const nombre = document.getElementById("nombre").value.trim();
+    const url = document.getElementById("url").value.trim();
+    const tag = document.getElementById("tag").value.trim();
+    const logo = document.getElementById("logo").value.trim();
+
+    if (!nombre || !url) {
+        alert("Nombre y URL son obligatorios");
+        return;
+    }
+
+    try {
+        if (editId) {
+            await db.collection("juegos").doc(editId).update({ nombre, url, tag, logo });
+            alert("Juego actualizado");
+        } else {
+            await db.collection("juegos").add({ nombre, url, tag, logo });
+            alert("Juego añadido correctamente");
+        }
+        limpiarFormulario();
+        cargarJuegosAdmin();
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar");
+    }
+}
+
+function limpiarFormulario() {
+    document.getElementById("nombre").value = "";
+    document.getElementById("url").value = "";
+    document.getElementById("tag").value = "";
+    document.getElementById("logo").value = "";
+    editId = null;
+}
+
+// Cargar juegos en el admin
+async function cargarJuegosAdmin() {
+    const snapshot = await db.collection("juegos").get();
+    const cont = document.getElementById("listaAdmin");
+    cont.innerHTML = "";
+
+    snapshot.docs.forEach(doc => {
+        const j = doc.data();
+        const div = document.createElement("div");
+        div.className = "game-item";
+        div.innerHTML = `
+            <div>
+                <strong>${j.nombre}</strong> - ${j.tag || ''}<br>
+                <small>${j.url}</small>
+            </div>
+            <div>
+                <button onclick="editarJuego('${doc.id}', '${j.nombre}', '${j.url}', '${j.tag || ''}', '${j.logo || ''}')">EDITAR</button>
+                <button onclick="eliminarJuego('${doc.id}')" style="background:#ff4444;">ELIMINAR</button>
+            </div>
+        `;
+        cont.appendChild(div);
+    });
+}
+
+window.editarJuego = function(id, nombre, url, tag, logo) {
+    editId = id;
+    document.getElementById("nombre").value = nombre;
+    document.getElementById("url").value = url;
+    document.getElementById("tag").value = tag;
+    document.getElementById("logo").value = logo;
+};
+
+window.eliminarJuego = async function(id) {
+    if (confirm("¿Eliminar este juego?")) {
+        await db.collection("juegos").doc(id).delete();
+        cargarJuegosAdmin();
+    }
+};
+
+// Cargar al iniciar
+cargarJuegosAdmin();
+</script>
+</body>
+</html>
