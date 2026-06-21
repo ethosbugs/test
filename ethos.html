@@ -21,31 +21,82 @@
         overflow: hidden;
         position: relative;
     }
-    canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.35; }
+
+    /* Matrix en el fondo más bajo */
+    canvas#matrix { 
+        position: fixed; 
+        inset: 0; 
+        z-index: 1; 
+        opacity: 0.25; 
+    }
 
     header {
-        position: relative; z-index: 20; padding: 20px 40px;
-        background: rgba(10,12,25,0.95); border-bottom: 2px solid var(--neon-green);
-        display: flex; justify-content: space-between; align-items: center;
+        position: relative; 
+        z-index: 30; 
+        padding: 20px 40px;
+        background: rgba(10,12,25,0.97); 
+        border-bottom: 2px solid var(--neon-green);
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
     }
-    .logo { font-size: 2.6rem; font-weight: 900; letter-spacing: 4px; display: flex; align-items: center; gap: 8px; }
-    .logo::before { content: ">"; color: var(--neon-green); font-size: 3rem; text-shadow: 0 0 20px var(--neon-green); }
+    .logo { 
+        font-size: 2.6rem; 
+        font-weight: 900; 
+        letter-spacing: 4px; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+    }
+    .logo::before { 
+        content: ">"; 
+        color: var(--neon-green); 
+        font-size: 3rem; 
+        text-shadow: 0 0 20px var(--neon-green); 
+    }
 
     .controls { display: flex; gap: 12px; align-items: center; }
     input, button {
-        background: rgba(0,0,0,0.8); border: 2px solid var(--neon-green);
-        color: var(--neon-white); padding: 12px 20px; border-radius: 50px;
+        background: rgba(0,0,0,0.85); 
+        border: 2px solid var(--neon-green);
+        color: var(--neon-white); 
+        padding: 12px 20px; 
+        border-radius: 50px;
     }
-    button:hover { background: var(--neon-white); color: #000; transform: scale(1.05); }
+    button:hover { 
+        background: var(--neon-white); 
+        color: #000; 
+        transform: scale(1.05); 
+    }
 
-    .cat-bar { padding: 15px 40px; background: rgba(12,15,30,0.9); display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(0,255,157,0.2); }
-    .cat-btn {
-        background: transparent; border: 2px solid var(--neon-green); color: var(--neon-white);
-        padding: 8px 22px; border-radius: 50px; cursor: pointer; transition: all 0.3s;
+    .cat-bar { 
+        position: relative; 
+        z-index: 25;
+        padding: 15px 40px; 
+        background: rgba(12,15,30,0.95); 
+        display: flex; 
+        gap: 10px; 
+        flex-wrap: wrap; 
+        border-bottom: 1px solid rgba(0,255,157,0.3); 
     }
-    .cat-btn.active, .cat-btn:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
+    .cat-btn {
+        background: transparent; 
+        border: 2px solid var(--neon-green); 
+        color: var(--neon-white);
+        padding: 8px 22px; 
+        border-radius: 50px; 
+        cursor: pointer; 
+        transition: all 0.3s;
+    }
+    .cat-btn.active, .cat-btn:hover { 
+        background: var(--neon-green); 
+        color: #000; 
+        box-shadow: 0 0 20px var(--neon-green); 
+    }
 
     .games-container {
+        position: relative;
+        z-index: 20;
         padding: 40px; 
         display: grid; 
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -54,7 +105,7 @@
         overflow-y: auto;
     }
     .game-card {
-        background: rgba(15,20,35,0.9); 
+        background: rgba(20,25,40,0.95); 
         border: 2px solid var(--neon-green);
         border-radius: 16px; 
         padding: 20px; 
@@ -65,6 +116,7 @@
     .game-card:hover { 
         transform: translateY(-12px) scale(1.04); 
         border-color: var(--neon-white); 
+        box-shadow: 0 0 30px rgba(0,255,157,0.3);
     }
     .game-logo {
         width: 100%;
@@ -103,10 +155,10 @@
 
 <div class="cat-bar" id="catBar"></div>
 <div class="games-container" id="listaJuegos"></div>
-<div style="position:fixed; bottom:25px; right:40px; z-index:30;" id="counter">0 JUEGOS</div>
+<div style="position:fixed; bottom:25px; right:40px; z-index:35; font-size:1.2rem;" id="counter">0 JUEGOS</div>
 
 <script>
-// Firebase
+// === Firebase y resto del código (igual que antes) ===
 const firebaseConfig = {
   apiKey: "AIzaSyBEtMYOTg4fBGyShbULdGCuW76nwlUIfiI",
   authDomain: "ethosgames-a1bc1.firebaseapp.com",
@@ -127,7 +179,6 @@ const contenedor = document.getElementById("listaJuegos");
 const searchBar = document.getElementById("searchBar");
 const catBar = document.getElementById("catBar");
 
-// Matrix
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 let w, h;
@@ -185,8 +236,7 @@ function mostrarJuegos(filtro = "") {
 
     const filtrados = juegos.filter(j => {
         const matchSearch = !filtro || (j.nombre && j.nombre.toLowerCase().includes(filtro.toLowerCase()));
-        const matchCat = currentCat === "ALL" || 
-                         (currentCat === "FAVS" ? favoritos.includes(j.nombre) : j.category === currentCat);
+        const matchCat = currentCat === "ALL" || (currentCat === "FAVS" ? favoritos.includes(j.nombre) : j.category === currentCat);
         return matchSearch && matchCat;
     });
 
@@ -198,11 +248,10 @@ function mostrarJuegos(filtro = "") {
         div.innerHTML = `
             <img src="${logo}" class="game-logo" alt="${juego.nombre}">
             <div class="fav-btn" onclick="toggleFav('${juego.nombre}', event)">${favoritos.includes(juego.nombre) ? '★' : '☆'}</div>
-            <div style="font-size:1.5rem; margin:12px 0; color:white;">${juego.nombre}</div>
+            <div style="font-size:1.5rem; margin:12px 0; color:white;">${juego.nombre || 'Sin nombre'}</div>
             <div style="opacity:0.7;">${juego.category || ''}</div>
         `;
 
-        // Click en toda la tarjeta (menos en la estrella)
         div.onclick = function(e) {
             if (!e.target.classList.contains('fav-btn')) {
                 abrirJuego(juego.url);
