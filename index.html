@@ -6,23 +6,23 @@
 <title>ETHOS TECHNOLOGIES • NEON v3.1</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50%' x='50%' font-size='70' text-anchor='middle'%3E⚡%3C/text%3E%3C/svg%3E">
 <style>
-    :root { --neon-cyan: #00f7ff; --neon-pink: #ff00ff; --bg: #0a0a12; }
+    :root { --neon-cyan: #00f7ff; --neon-green: #00ff9d; --bg: #0a0a12; }
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
         height: 100vh;
         background: var(--bg);
-        color: var(--neon-cyan);
+        color: var(--neon-green);
         font-family: 'Courier New', monospace;
         overflow: hidden;
         position: relative;
     }
-    canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.75; }
+    canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.45; }
     .grid-bg {
         position: fixed; inset: 0; z-index: 2;
-        background: linear-gradient(rgba(0,247,255,0.04) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0,247,255,0.04) 1px, transparent 1px);
-        background-size: 50px 50px;
-        animation: gridMove 28s linear infinite;
+        background: linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+        animation: gridMove 40s linear infinite;
     }
     .center {
         position: absolute; inset: 0;
@@ -31,30 +31,32 @@
         z-index: 10; text-align: center;
     }
     .holo-logo {
-        width: 300px; height: 300px;
-        border: 5px solid var(--neon-cyan);
+        width: 320px; height: 320px;
+        border: 6px solid var(--neon-green);
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 90px var(--neon-cyan), inset 0 0 80px rgba(0,247,255,0.6);
-        animation: holoPulse 3.5s ease-in-out infinite alternate;
+        box-shadow: 0 0 100px var(--neon-green), inset 0 0 80px rgba(0,255,157,0.5);
+        animation: holoPulse 4s ease-in-out infinite alternate;
     }
     .holo-logo::after {
         content: "ETHOS";
-        font-size: 5.2rem; font-weight: 900; letter-spacing: 18px;
+        font-size: 5.5rem; font-weight: 900; letter-spacing: 20px;
+        color: var(--neon-cyan);
         text-shadow: 0 0 60px var(--neon-pink);
     }
     .enter-btn {
-        margin-top: 70px; padding: 20px 80px; font-size: 2rem;
-        background: transparent; border: 3px solid var(--neon-cyan);
-        color: var(--neon-cyan); cursor: pointer; letter-spacing: 8px;
+        margin-top: 60px; padding: 22px 90px; font-size: 2.1rem;
+        background: transparent; border: 3px solid var(--neon-green);
+        color: var(--neon-green); cursor: pointer; letter-spacing: 8px;
+        border-radius: 8px;
         transition: all 0.4s;
     }
     .enter-btn:hover {
         background: var(--neon-pink); color: #000;
-        box-shadow: 0 0 60px var(--neon-pink); transform: scale(1.08);
+        box-shadow: 0 0 60px var(--neon-pink); transform: scale(1.1);
     }
-    @keyframes holoPulse { to { box-shadow: 0 0 120px var(--neon-cyan), 0 0 180px var(--neon-pink); } }
-    @keyframes gridMove { to { background-position: 50px 50px; } }
+    @keyframes holoPulse { to { box-shadow: 0 0 130px var(--neon-green), 0 0 200px var(--neon-pink); } }
+    @keyframes gridMove { to { background-position: 60px 60px; } }
 </style>
 </head>
 <body>
@@ -63,9 +65,13 @@
 
 <div class="center">
     <div class="holo-logo"></div>
-    <div style="margin-top:40px; font-size:3.2rem; letter-spacing:14px; text-shadow:0 0 40px var(--neon-cyan);">ETHOS TECHNOLOGIES</div>
-    <div style="margin-top:25px; font-size:1.5rem; opacity:0.85;">v3.1 • NEURAL ENTERTAINMENT SYSTEM</div>
+    <div style="margin-top:40px; font-size:3.4rem; letter-spacing:12px; color:var(--neon-cyan);">ETHOS TECHNOLOGIES</div>
+    <div style="margin-top:20px; font-size:1.4rem; opacity:0.9;">v3.1 • NEURAL ENTERTAINMENT SYSTEM</div>
     <button class="enter-btn" onclick="window.location.href='ethos.html'">ENTER SYSTEM</button>
+    
+    <div style="margin-top:80px;">
+        <a href="admin.html" style="color:var(--neon-pink); text-decoration:none; font-size:1.1rem;">→ ADMIN PANEL</a>
+    </div>
 </div>
 
 <script>
@@ -75,21 +81,21 @@ let w, h;
 function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
 resize(); window.addEventListener('resize', resize);
 
-const chars = "01アイウエオETHOS▓▒░█◆◇▽";
-let drops = Array(Math.floor(w/17)).fill(1);
+const chars = "01アイウエオETHOS▓▒░█◆◇";
+let drops = Array(Math.floor(w/18)).fill(1);
 
 function draw() {
-    ctx.fillStyle = 'rgba(10,10,18,0.12)';
+    ctx.fillStyle = 'rgba(10,12,20,0.1)';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#00f7ff';
-    ctx.font = '16px monospace';
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '15px monospace';
     for (let i = 0; i < drops.length; i++) {
-        ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*17, drops[i]*17);
-        if (drops[i]*17 > h && Math.random() > 0.97) drops[i] = 0;
+        ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*18, drops[i]*18);
+        if (drops[i]*18 > h && Math.random() > 0.975) drops[i] = 0;
         drops[i]++;
     }
 }
-setInterval(draw, 45);
+setInterval(draw, 50);
 </script>
 </body>
 </html>
