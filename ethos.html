@@ -38,10 +38,10 @@
     }
     button:hover { background: var(--neon-white); color: #000; transform: scale(1.05); }
 
-    .cat-bar { padding: 15px 40px; background: rgba(12,15,30,0.9); display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(0,255,157,0.2); }
+    .cat-bar { padding: 15px 40px; background: rgba(12,15,30,0.9); display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(0,255,157,0.2); overflow-x: auto; }
     .cat-btn {
         background: transparent; border: 2px solid var(--neon-green); color: var(--neon-white);
-        padding: 8px 22px; border-radius: 50px; cursor: pointer; transition: all 0.3s;
+        padding: 8px 22px; border-radius: 50px; cursor: pointer; transition: all 0.3s; white-space: nowrap;
     }
     .cat-btn.active, .cat-btn:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
 
@@ -209,8 +209,7 @@ function mostrarJuegos(filtro = "") {
             <div style="opacity:0.7;">${juego.category || ''}</div>
         `;
 
-        // Click en la tarjeta (excepto en la estrella)
-        div.addEventListener('click', (e) => {
+        div.addEventListener('click', function(e) {
             if (!e.target.classList.contains('fav-btn')) {
                 abrirJuego(juego.url);
             }
@@ -239,7 +238,7 @@ function abrirJuego(url) {
 function openEthosAI() { window.open("https://script.google.com/macros/s/AKfycbw9TPeZki-pAXzV_S3_OHvpP9fC-5k9yU-UVNfJVSGVor3ls6IvcYvkDGKJg-FH_nwl/exec", "_blank"); }
 function openSpotify() { window.open("https://open.spotify.com/embed/playlist/4L7KXkQeIQpxWNdXMfBVSM", "_blank"); }
 
-// Inicialización
+// Init
 searchBar.addEventListener("input", e => mostrarJuegos(e.target.value));
 cargarJuegos();
 </script>
