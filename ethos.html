@@ -38,10 +38,10 @@
     }
     button:hover { background: var(--neon-white); color: #000; transform: scale(1.05); }
 
-    .cat-bar { padding: 15px 40px; background: rgba(12,15,30,0.9); display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(0,255,157,0.2); overflow-x: auto; }
+    .cat-bar { padding: 15px 40px; background: rgba(12,15,30,0.9); display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(0,255,157,0.2); }
     .cat-btn {
         background: transparent; border: 2px solid var(--neon-green); color: var(--neon-white);
-        padding: 8px 22px; border-radius: 50px; cursor: pointer; transition: all 0.3s; white-space: nowrap;
+        padding: 8px 22px; border-radius: 50px; cursor: pointer; transition: all 0.3s;
     }
     .cat-btn.active, .cat-btn:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
 
@@ -157,18 +157,17 @@ function generarCategorias() {
     catBar.innerHTML = "";
     let tags = new Set(juegos.map(j => j.category).filter(Boolean));
 
-    // TODOS
     const allBtn = document.createElement("button");
     allBtn.className = `cat-btn ${currentCat === "ALL" ? "active" : ""}`;
     allBtn.textContent = "TODOS";
-    allBtn.onclick = () => changeCategory("ALL");
+    allBtn.onclick = () => { currentCat = "ALL"; generarCategorias(); mostrarJuegos(searchBar.value); };
     catBar.appendChild(allBtn);
 
     tags.forEach(tag => {
         const btn = document.createElement("button");
         btn.className = `cat-btn ${currentCat === tag ? "active" : ""}`;
         btn.textContent = tag.toUpperCase();
-        btn.onclick = () => changeCategory(tag);
+        btn.onclick = () => { currentCat = tag; generarCategorias(); mostrarJuegos(searchBar.value); };
         catBar.appendChild(btn);
     });
 
@@ -176,15 +175,9 @@ function generarCategorias() {
         const favBtn = document.createElement("button");
         favBtn.className = `cat-btn ${currentCat === "FAVS" ? "active" : ""}`;
         favBtn.textContent = "★ FAVORITOS";
-        favBtn.onclick = () => changeCategory("FAVS");
+        favBtn.onclick = () => { currentCat = "FAVS"; generarCategorias(); mostrarJuegos(searchBar.value); };
         catBar.appendChild(favBtn);
     }
-}
-
-function changeCategory(cat) {
-    currentCat = cat;
-    generarCategorias();
-    mostrarJuegos(searchBar.value);
 }
 
 function mostrarJuegos(filtro = "") {
@@ -209,11 +202,12 @@ function mostrarJuegos(filtro = "") {
             <div style="opacity:0.7;">${juego.category || ''}</div>
         `;
 
-        div.addEventListener('click', function(e) {
+        // Click en toda la tarjeta (menos en la estrella)
+        div.onclick = function(e) {
             if (!e.target.classList.contains('fav-btn')) {
                 abrirJuego(juego.url);
             }
-        });
+        };
 
         contenedor.appendChild(div);
     });
