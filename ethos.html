@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ETHOS PLAYER • NEON v3.1</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
     :root {
+        --neon-green: #00ff9d;
         --neon-cyan: #00f7ff;
         --neon-pink: #ff00ff;
         --bg: #0a0a12;
@@ -14,129 +17,78 @@
     body {
         height: 100vh;
         background: var(--bg);
-        color: var(--neon-cyan);
+        color: var(--neon-green);
         font-family: 'Courier New', monospace;
         overflow: hidden;
         position: relative;
     }
 
-    canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.65; }
-    
-    .grid-bg {
-        position: fixed;
-        inset: 0;
-        background: linear-gradient(rgba(0,247,255,0.04) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0,247,255,0.04) 1px, transparent 1px);
-        background-size: 50px 50px;
-        animation: gridMove 35s linear infinite;
-        z-index: 2;
-    }
+    canvas#matrix { position: fixed; inset: 0; z-index: 1; opacity: 0.4; }
 
     header {
         position: relative;
         z-index: 20;
-        padding: 18px 40px;
+        padding: 20px 40px;
         background: rgba(10,12,25,0.95);
-        border-bottom: 2px solid var(--neon-cyan);
+        border-bottom: 2px solid var(--neon-green);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 0 30px var(--neon-cyan);
     }
 
-    .logo { font-size: 2.3rem; font-weight: 900; letter-spacing: 8px; text-shadow: 0 0 25px var(--neon-pink); }
+    .logo { font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; color: var(--neon-green); }
 
-    .controls { display: flex; gap: 12px; align-items: center; }
-
+    .controls { display: flex; gap: 12px; }
     input, button {
         background: rgba(0,0,0,0.8);
-        border: 2px solid var(--neon-cyan);
-        color: var(--neon-cyan);
-        padding: 10px 18px;
+        border: 2px solid var(--neon-green);
+        color: var(--neon-green);
+        padding: 12px 20px;
+        border-radius: 50px;
         font-family: inherit;
+    }
+    button {
+        cursor: pointer;
+        transition: all 0.3s;
     }
     button:hover {
         background: var(--neon-pink);
         color: #000;
-        box-shadow: 0 0 35px var(--neon-pink);
-    }
-
-    .cat-bar {
-        position: relative;
-        z-index: 20;
-        padding: 12px 40px;
-        background: rgba(12,14,30,0.9);
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        border-bottom: 1px solid rgba(0,247,255,0.2);
-    }
-
-    .cat-btn {
-        background: transparent;
-        border: 2px solid var(--neon-cyan);
-        color: var(--neon-cyan);
-        padding: 8px 22px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    .cat-btn.active, .cat-btn:hover {
-        background: var(--neon-cyan);
-        color: #000;
-        box-shadow: 0 0 25px var(--neon-cyan);
+        transform: scale(1.05);
     }
 
     .games-container {
         position: relative;
         z-index: 10;
-        padding: 35px 40px;
+        padding: 40px;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 25px;
-        max-height: calc(100vh - 190px);
+        max-height: calc(100vh - 180px);
         overflow-y: auto;
     }
 
     .game-card {
-        background: rgba(15,18,40,0.9);
-        border: 2px solid var(--neon-cyan);
-        border-radius: 8px;
-        padding: 18px;
+        background: rgba(15,20,35,0.9);
+        border: 2px solid var(--neon-green);
+        border-radius: 16px;
+        padding: 20px;
         cursor: pointer;
         transition: all 0.4s;
-        position: relative;
-        overflow: hidden;
     }
-
     .game-card:hover {
-        transform: translateY(-14px) scale(1.04);
-        box-shadow: 0 0 55px var(--neon-pink);
+        transform: translateY(-12px) scale(1.04);
         border-color: var(--neon-pink);
+        box-shadow: 0 0 40px var(--neon-pink);
     }
 
     .game-logo {
         width: 100%;
-        height: 140px;
+        height: 160px;
         object-fit: contain;
         background: #000;
-        border: 1px solid rgba(0,247,255,0.3);
-        margin-bottom: 12px;
-        border-radius: 6px;
-    }
-
-    .game-title {
-        font-size: 1.45rem;
-        margin-bottom: 8px;
-        text-shadow: 0 0 12px currentColor;
-    }
-
-    .fav-btn {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        font-size: 1.8rem;
-        cursor: pointer;
-        z-index: 5;
+        border-radius: 12px;
+        margin-bottom: 15px;
     }
 
     .scanline {
@@ -144,119 +96,97 @@
         inset: 0;
         z-index: 5;
         pointer-events: none;
-        background: repeating-linear-gradient(transparent 0px, transparent 4px, rgba(0,255,220,0.06) 4px, rgba(0,255,220,0.06) 8px);
-        animation: scan 7s linear infinite;
+        background: repeating-linear-gradient(transparent 0px, transparent 4px, rgba(0,255,150,0.05) 4px, rgba(0,255,150,0.05) 8px);
+        animation: scan 8s linear infinite;
     }
 
-    @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(400%); } }
-    @keyframes gridMove { to { background-position: 50px 50px; } }
+    @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(300%); } }
 </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
-<div class="grid-bg"></div>
 <div class="scanline"></div>
 
 <header>
-    <div class="logo">ETHOS<span style="color:var(--neon-pink)">_PLAYER</span></div>
+    <div class="logo">ETHOS_<span style="color:var(--neon-pink)">PLAYER</span></div>
     <div class="controls">
-        <input type="text" id="searchBar" placeholder="BUSCAR JUEGO..." style="width: 260px;">
+        <input type="text" id="searchBar" placeholder="BUSCAR JUEGO..." style="width:280px;">
         <button onclick="openEthosAI()">ETHOS AI</button>
         <button onclick="openSpotify()">SPOTIFY</button>
     </div>
 </header>
 
-<div class="cat-bar" id="catBar"></div>
 <div class="games-container" id="listaJuegos"></div>
-
-<div style="position:fixed; bottom:20px; right:30px; z-index:30; font-size:1.2rem; opacity:0.7;" id="counter">0 JUEGOS</div>
+<div style="position:fixed; bottom:25px; right:40px; z-index:30; font-size:1.3rem;" id="counter">0 JUEGOS</div>
 
 <script>
-// === MATRIX BACKGROUND ===
+// === Firebase Config ===
+const firebaseConfig = {
+  apiKey: "AIzaSyBEtMYOTg4fBGyShbULdGCuW76nwlUIfiI",
+  authDomain: "ethosgames-a1bc1.firebaseapp.com",
+  projectId: "ethosgames-a1bc1",
+  storageBucket: "ethosgames-a1bc1.firebasestorage.app",
+  messagingSenderId: "877649560017",
+  appId: "1:877649560017:web:598a7bc006323627ab60f0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// === Matrix suave (menos invasivo) ===
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 let w, h;
-
-function resizeCanvas() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-const chars = "01アイウエオETHOS▓▒░█◆◇";
-let drops = Array(Math.floor(w/16)).fill(1);
+function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
 
 function drawMatrix() {
-    ctx.fillStyle = 'rgba(10,10,18,0.1)';
+    ctx.fillStyle = 'rgba(10,12,20,0.15)';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#00f7ff';
-    ctx.font = '15px monospace';
-    for (let i = 0; i < drops.length; i++) {
-        const text = chars[Math.floor(Math.random() * chars.length)];
-        ctx.fillText(text, i * 16, drops[i] * 16);
-        if (drops[i] * 16 > h && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-    }
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '14px monospace';
+    // Matrix ligera...
 }
-setInterval(drawMatrix, 45);
+setInterval(drawMatrix, 80);
 
-// === TU LÓGICA ORIGINAL (sin cambios) ===
-const juegos = juegosRaw.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
+// === Cargar Juegos desde Firebase ===
+let juegos = [];
 let currentCat = "ALL";
 let favoritos = JSON.parse(localStorage.getItem("ethos_favs")) || [];
 
 const contenedor = document.getElementById("listaJuegos");
 const searchBar = document.getElementById("searchBar");
-const catBar = document.getElementById("catBar");
 
-function toggleFav(nombre, e) {
-    e.stopPropagation();
-    favoritos = favoritos.includes(nombre) ? favoritos.filter(f => f !== nombre) : [...favoritos, nombre];
-    localStorage.setItem("ethos_favs", JSON.stringify(favoritos));
-    generarCategorias();
-    mostrarJuegos(searchBar.value, false);
+async function cargarJuegos() {
+    try {
+        const snapshot = await db.collection("juegos").get();
+        juegos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        mostrarJuegos();
+    } catch (e) {
+        console.error("Error cargando juegos:", e);
+        contenedor.innerHTML = "<p style='color:#ff5555; grid-column:1/-1; text-align:center;'>Error al cargar juegos desde Firebase</p>";
+    }
 }
 
-function generarCategorias() {
-    catBar.innerHTML = "";
-    let finalTags = [];
-    const extraTags = [...new Set(juegos.map(j => j.tag))].sort();
-    if (favoritos.length > 0) finalTags.push("FAVS");
-    finalTags.push("ALL");
-    finalTags = [...finalTags, ...extraTags];
-
-    finalTags.forEach(tag => {
-        const btn = document.createElement("button");
-        btn.className = `cat-btn ${currentCat === tag ? "active" : ""}`;
-        btn.textContent = tag === "FAVS" ? "★ FAVORITOS" : tag === "ALL" ? "SYSTEM_ALL" : tag;
-        btn.onclick = () => { currentCat = tag; generarCategorias(); mostrarJuegos(searchBar.value); };
-        catBar.appendChild(btn);
-    });
-}
-
-function mostrarJuegos(filtro = "", animate = true) {
+function mostrarJuegos(filtro = "") {
     contenedor.innerHTML = "";
 
-    const filtrados = juegos.filter(j => {
-        const matchSearch = j.nombre.toLowerCase().includes(filtro.toLowerCase());
-        const matchCat = currentCat === "ALL" || (currentCat === "FAVS" ? favoritos.includes(j.nombre) : j.tag === currentCat);
-        return matchSearch && matchCat;
-    });
+    const filtrados = juegos.filter(j => 
+        j.nombre.toLowerCase().includes(filtro.toLowerCase())
+    );
 
-    filtrados.forEach((juego, i) => {
+    filtrados.forEach(juego => {
         const div = document.createElement("div");
         div.className = "game-card";
 
-        const logoUrl = juego.logo || "https://via.placeholder.com/300x160/0a0a12/00f7ff?text=ETHOS";
+        const logo = juego.logo || "https://via.placeholder.com/300x160/112233/00ff9d?text=" + juego.nombre;
 
         div.innerHTML = `
-            <img src="${logoUrl}" class="game-logo" alt="${juego.nombre}">
-            <div class="fav-btn" onclick="toggleFav('${juego.nombre}', event)">${favoritos.includes(juego.nombre) ? '★' : '☆'}</div>
-            <div class="game-title">${juego.nombre}</div>
-            <div style="opacity:0.7; font-size:0.95rem;">${juego.tag || ''}</div>
+            <img src="${logo}" class="game-logo" alt="${juego.nombre}">
+            <div style="font-size:1.5rem; margin:10px 0;">${juego.nombre}</div>
+            <div style="opacity:0.7;">${juego.tag || ''}</div>
         `;
 
         div.onclick = () => abrirJuego(juego.url);
@@ -268,22 +198,16 @@ function mostrarJuegos(filtro = "", animate = true) {
 
 function abrirJuego(url) {
     const win = window.open("about:blank", "_blank");
-    win.document.write(`<html><head><title>ETHOS GAME</title><style>body{margin:0;background:#000;height:100vh;overflow:hidden;}</style></head><body><iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></body></html>`);
+    win.document.write(`<html><body style="margin:0;background:#000"><iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></body></html>`);
     win.document.close();
 }
 
-function openEthosAI() {
-    window.open("https://script.google.com/macros/s/AKfycbw9TPeZki-pAXzV_S3_OHvpP9fC-5k9yU-UVNfJVSGVor3ls6IvcYvkDGKJg-FH_nwl/exec", "_blank");
-}
-
-function openSpotify() {
-    window.open("https://open.spotify.com/embed/playlist/4L7KXkQeIQpxWNdXMfBVSM?utm_source=generator&theme=0", "_blank");
-}
+function openEthosAI() { window.open("https://script.google.com/macros/s/AKfycbw9TPeZki-pAXzV_S3_OHvpP9fC-5k9yU-UVNfJVSGVor3ls6IvcYvkDGKJg-FH_nwl/exec", "_blank"); }
+function openSpotify() { window.open("https://open.spotify.com/embed/playlist/4L7KXkQeIQpxWNdXMfBVSM", "_blank"); }
 
 // Init
 searchBar.addEventListener("input", e => mostrarJuegos(e.target.value));
-generarCategorias();
-mostrarJuegos();
+cargarJuegos();
 </script>
 </body>
 </html>
