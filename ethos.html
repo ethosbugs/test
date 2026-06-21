@@ -46,14 +46,51 @@
     .cat-btn.active, .cat-btn:hover { background: var(--neon-green); color: #000; }
 
     .games-container {
-        padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 25px; max-height: calc(100vh - 220px); overflow-y: auto;
+        padding: 40px; 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 25px; 
+        max-height: calc(100vh - 220px); 
+        overflow-y: auto;
     }
     .game-card {
-        background: rgba(15,20,35,0.9); border: 2px solid var(--neon-green);
-        border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.4s; position: relative;
+        background: rgba(15,20,35,0.9); 
+        border: 2px solid var(--neon-green);
+        border-radius: 16px; 
+        padding: 20px; 
+        cursor: pointer; 
+        transition: all 0.4s; 
+        position: relative;
     }
-    .game-card:hover { transform: translateY(-12px) scale(1.04); border-color: var(--neon-white); }
+    .game-card:hover { 
+        transform: translateY(-12px) scale(1.04); 
+        border-color: var(--neon-white); 
+    }
+
+    /* === MEJORA DE LOGOS === */
+    .game-logo {
+        width: 100%;
+        height: 170px;
+        object-fit: contain;
+        object-position: center;
+        background: #0f0f1f;
+        border: 1px solid rgba(0,255,157,0.2);
+        border-radius: 12px;
+        margin-bottom: 15px;
+        padding: 10px;
+        image-rendering: crisp-edges;
+    }
+
+    .fav-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 1.9rem;
+        cursor: pointer;
+        z-index: 5;
+        color: var(--neon-green);
+    }
+    .fav-btn:hover { color: var(--neon-white); }
 </style>
 </head>
 <body>
@@ -75,7 +112,7 @@
 <div style="position:fixed; bottom:25px; right:40px; z-index:30;" id="counter">0 JUEGOS</div>
 
 <script>
-// === Firebase ===
+// (El resto del script se mantiene igual que la versión anterior)
 const firebaseConfig = {
   apiKey: "AIzaSyBEtMYOTg4fBGyShbULdGCuW76nwlUIfiI",
   authDomain: "ethosgames-a1bc1.firebaseapp.com",
@@ -96,7 +133,6 @@ const contenedor = document.getElementById("listaJuegos");
 const searchBar = document.getElementById("searchBar");
 const catBar = document.getElementById("catBar");
 
-// Matrix
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 let w, h;
@@ -110,20 +146,15 @@ function drawMatrix() {
 }
 setInterval(drawMatrix, 80);
 
-// Cargar Juegos
 async function cargarJuegos() {
     try {
-        console.log("Intentando cargar colección 'games'...");
         const snapshot = await db.collection("games").get();
-        console.log("Documentos encontrados:", snapshot.size);
-        
         juegos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => (a.nombre || "").localeCompare(b.nombre || ""));
-        
         generarCategorias();
         mostrarJuegos();
     } catch (e) {
-        console.error("Error completo:", e);
-        contenedor.innerHTML = `<p style='color:#ff5555; text-align:center; grid-column:1/-1;'>Error al cargar juegos<br><small>${e.message}</small></p>`;
+        console.error(e);
+        contenedor.innerHTML = `<p style='color:#ff5555; text-align:center; grid-column:1/-1;'>Error al cargar juegos</p>`;
     }
 }
 
@@ -198,7 +229,6 @@ function abrirJuego(url) {
 function openEthosAI() { window.open("https://script.google.com/macros/s/AKfycbw9TPeZki-pAXzV_S3_OHvpP9fC-5k9yU-UVNfJVSGVor3ls6IvcYvkDGKJg-FH_nwl/exec", "_blank"); }
 function openSpotify() { window.open("https://open.spotify.com/embed/playlist/4L7KXkQeIQpxWNdXMfBVSM", "_blank"); }
 
-// Init
 searchBar.addEventListener("input", e => mostrarJuegos(e.target.value));
 cargarJuegos();
 </script>
