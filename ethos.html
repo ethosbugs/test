@@ -9,7 +9,7 @@
 <style>
     :root {
         --neon-green: #00ff9d;
-        --neon-pink: #ff00ff;
+        --neon-white: #ffffff;
         --bg: #0a0a12;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -33,18 +33,32 @@
         justify-content: space-between;
         align-items: center;
     }
-    .logo { font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; }
+    .logo { 
+        font-size: 2.6rem; 
+        font-weight: 900; 
+        letter-spacing: 4px; 
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .logo::before {
+        content: ">";
+        color: var(--neon-green);
+        font-size: 3rem;
+        line-height: 1;
+        text-shadow: 0 0 20px var(--neon-green);
+    }
 
     .controls { display: flex; gap: 12px; align-items: center; }
     input, button {
         background: rgba(0,0,0,0.8);
         border: 2px solid var(--neon-green);
-        color: var(--neon-green);
+        color: var(--neon-white);
         padding: 12px 20px;
         border-radius: 50px;
     }
     button:hover {
-        background: var(--neon-pink);
+        background: var(--neon-white);
         color: #000;
         transform: scale(1.05);
     }
@@ -62,7 +76,7 @@
     .cat-btn {
         background: transparent;
         border: 2px solid var(--neon-green);
-        color: var(--neon-green);
+        color: var(--neon-white);
         padding: 8px 22px;
         border-radius: 50px;
         cursor: pointer;
@@ -95,8 +109,8 @@
     }
     .game-card:hover {
         transform: translateY(-12px) scale(1.04);
-        border-color: var(--neon-pink);
-        box-shadow: 0 0 40px var(--neon-pink);
+        border-color: var(--neon-white);
+        box-shadow: 0 0 40px var(--neon-white);
     }
     .game-logo {
         width: 100%;
@@ -110,10 +124,12 @@
         position: absolute;
         top: 15px;
         right: 15px;
-        font-size: 1.8rem;
+        font-size: 1.9rem;
         cursor: pointer;
         z-index: 5;
+        color: var(--neon-green);
     }
+    .fav-btn:hover { color: var(--neon-white); }
 </style>
 </head>
 <body>
@@ -121,9 +137,9 @@
 <canvas id="matrix"></canvas>
 
 <header>
-    <div class="logo">ETHOS_<span style="color:var(--neon-pink)">PLAYER</span></div>
+    <div class="logo">ETHOS PLAYER</div>
     <div class="controls">
-        <input type="text" id="searchBar" placeholder="BUSCAR JUEGO..." style="width:280px;">
+        <input type="text" id="searchBar" placeholder="BUSCAR JUEGO..." style="width:280px; color:var(--neon-white);">
         <button onclick="openEthosAI()">ETHOS AI</button>
         <button onclick="openSpotify()">SPOTIFY</button>
         <button onclick="window.location.href='admin.html'">ADMIN</button>
@@ -175,7 +191,7 @@ setInterval(drawMatrix, 80);
 async function cargarJuegos() {
     try {
         const snapshot = await db.collection("games").get();
-        juegos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        juegos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => a.nombre.localeCompare(b.nombre));
         generarCategorias();
         mostrarJuegos();
     } catch (e) {
@@ -184,11 +200,12 @@ async function cargarJuegos() {
     }
 }
 
-// Categorías
+// Categorías + Favoritos
 function generarCategorias() {
     catBar.innerHTML = "";
     let tags = new Set(juegos.map(j => j.category).filter(Boolean));
-    
+
+    // Botón TODOS
     const allBtn = document.createElement("button");
     allBtn.className = `cat-btn ${currentCat === "ALL" ? "active" : ""}`;
     allBtn.textContent = "TODOS";
@@ -213,7 +230,6 @@ function generarCategorias() {
     }
 }
 
-// Mostrar Juegos
 function mostrarJuegos(filtro = "") {
     contenedor.innerHTML = "";
 
@@ -228,12 +244,12 @@ function mostrarJuegos(filtro = "") {
         const div = document.createElement("div");
         div.className = "game-card";
 
-        const logo = juego.logo || `https://via.placeholder.com/300x160/112233/00ff9d?text=${juego.nombre?.substring(0,10)}`;
+        const logo = juego.logo || `https://via.placeholder.com/300x160/112233/00ff9d?text=${juego.nombre?.substring(0,8)}`;
 
         div.innerHTML = `
             <img src="${logo}" class="game-logo" alt="${juego.nombre}">
             <div class="fav-btn" onclick="toggleFav('${juego.nombre}', event)">${favoritos.includes(juego.nombre) ? '★' : '☆'}</div>
-            <div style="font-size:1.5rem; margin:10px 0;">${juego.nombre}</div>
+            <div style="font-size:1.5rem; margin:12px 0; color:var(--neon-white);">${juego.nombre}</div>
             <div style="opacity:0.7;">${juego.category || ''}</div>
         `;
 
@@ -266,7 +282,7 @@ function abrirJuego(url) {
 function openEthosAI() { window.open("https://script.google.com/macros/s/AKfycbw9TPeZki-pAXzV_S3_OHvpP9fC-5k9yU-UVNfJVSGVor3ls6IvcYvkDGKJg-FH_nwl/exec", "_blank"); }
 function openSpotify() { window.open("https://open.spotify.com/embed/playlist/4L7KXkQeIQpxWNdXMfBVSM", "_blank"); }
 
-// Inicialización
+// Init
 searchBar.addEventListener("input", e => mostrarJuegos(e.target.value));
 cargarJuegos();
 </script>
