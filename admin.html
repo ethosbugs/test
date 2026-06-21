@@ -29,8 +29,8 @@
 
 <input type="text" id="nombre" placeholder="Nombre del juego">
 <input type="text" id="url" placeholder="URL completa del juego">
-<input type="text" id="tag" placeholder="Categoría (Acción, Arcade, etc)">
-<input type="text" id="logo" placeholder="Link del logo (imagen)">
+<input type="text" id="category" placeholder="Categoría (ej: Acción, Simulación)">
+<input type="text" id="logo" placeholder="Link del logo">
 <button onclick="guardarJuego()">💾 GUARDAR JUEGO</button>
 
 <div style="margin-top:40px;">
@@ -56,33 +56,36 @@ let editId = null;
 async function guardarJuego() {
     const nombre = document.getElementById("nombre").value.trim();
     const url = document.getElementById("url").value.trim();
-    const tag = document.getElementById("tag").value.trim();
+    const category = document.getElementById("category").value.trim();
     const logo = document.getElementById("logo").value.trim();
 
     if (!nombre || !url) return alert("Nombre y URL son obligatorios");
 
     try {
         if (editId) {
-            await db.collection("juegos").doc(editId).update({ nombre, url, tag, logo });
+            await db.collection("games").doc(editId).update({ nombre, url, category, logo });
         } else {
-            await db.collection("juegos").add({ nombre, url, tag, logo, timestamp: Date.now() });
+            await db.collection("games").add({ nombre, url, category, logo, timestamp: Date.now() });
         }
-        alert("Guardado correctamente");
+        alert("¡Juego guardado correctamente!");
         limpiarFormulario();
         cargarJuegosAdmin();
-    } catch(e) { console.error(e); alert("Error al guardar"); }
+    } catch(e) { 
+        console.error(e); 
+        alert("Error al guardar"); 
+    }
 }
 
 function limpiarFormulario() {
     document.getElementById("nombre").value = "";
     document.getElementById("url").value = "";
-    document.getElementById("tag").value = "";
+    document.getElementById("category").value = "";
     document.getElementById("logo").value = "";
     editId = null;
 }
 
 async function cargarJuegosAdmin() {
-    const snapshot = await db.collection("juegos").get();
+    const snapshot = await db.collection("games").get();
     document.getElementById("total").textContent = snapshot.size;
 
     const cont = document.getElementById("listaAdmin");
@@ -93,27 +96,27 @@ async function cargarJuegosAdmin() {
         const div = document.createElement("div");
         div.className = "game-item";
         div.innerHTML = `
-            <div><strong>${j.nombre}</strong><br><small>${j.tag || ''} — ${j.url.substring(0,60)}...</small></div>
+            <div><strong>${j.nombre}</strong><br><small>${j.category || ''}</small></div>
             <div>
-                <button onclick="editar('${doc.id}', '${j.nombre}', '${j.url}', '${j.tag||''}', '${j.logo||''}')">EDITAR</button>
-                <button onclick="eliminar('${doc.id}')" style="background:#ff3366;">DELETE</button>
+                <button onclick="editar('${doc.id}', '${j.nombre}', '${j.url}', '${j.category||''}', '${j.logo||''}')">EDITAR</button>
+                <button onclick="eliminar('${doc.id}')" style="background:#ff3366;">ELIMINAR</button>
             </div>
         `;
         cont.appendChild(div);
     });
 }
 
-window.editar = function(id, nombre, url, tag, logo) {
+window.editar = function(id, nombre, url, category, logo) {
     editId = id;
     document.getElementById("nombre").value = nombre;
     document.getElementById("url").value = url;
-    document.getElementById("tag").value = tag;
+    document.getElementById("category").value = category;
     document.getElementById("logo").value = logo;
 };
 
 window.eliminar = async function(id) {
-    if (confirm("Eliminar este juego permanentemente?")) {
-        await db.collection("juegos").doc(id).delete();
+    if (confirm("¿Eliminar este juego permanentemente?")) {
+        await db.collection("games").doc(id).delete();
         cargarJuegosAdmin();
     }
 };
