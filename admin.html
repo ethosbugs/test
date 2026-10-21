@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0a12">
+<title>ETHOS • ADMIN PANEL</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<!-- Acceso con contraseña -->
+<div class="gate" id="gate">
+  <form id="gateForm" autocomplete="off">
+    <h1>ACCESO ADMIN</h1>
+    <input class="input" type="password" id="pass" placeholder="Contraseña" aria-label="Contraseña" autofocus>
+    <button class="btn" type="submit">ENTRAR</button>
+    <div class="msg" id="gateMsg" role="alert"></div>
+    <a href="ethos.html" style="color:var(--g);opacity:.7">← Volver a los juegos</a>
+  </form>
+</div>
+
+<!-- Panel (oculto hasta iniciar sesión) -->
+<div class="wrap admin" id="panel" hidden>
+  <div class="admin-head">
+    <h1>ETHOS ADMIN PANEL</h1>
+    <div class="controls">
+      <a class="btn small" href="ethos.html" style="text-decoration:none">Ver web</a>
+      <button class="btn small danger" id="logout">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <form class="form" id="form">
+    <input class="input" id="nombre" placeholder="Nombre del juego" required maxlength="80">
+    <input class="input" id="url" type="url" placeholder="URL completa del juego (https://...)" required>
+    <input class="input" id="category" list="cats" placeholder="Categoría (ej: Acción, Simulación)" maxlength="40">
+    <datalist id="cats"></datalist>
+    <input class="input" id="logo" type="url" placeholder="Link del logo (opcional)">
+    <div class="row">
+      <button class="btn" type="submit" id="saveBtn">💾 GUARDAR JUEGO</button>
+      <button class="btn" type="button" id="cancelBtn" hidden>CANCELAR EDICIÓN</button>
+    </div>
+  </form>
+
+  <div class="list-head">
+    <h2>Juegos en Firebase (<span id="total">0</span>)</h2>
+    <input class="input small" type="search" id="filtro" placeholder="Filtrar lista..." aria-label="Filtrar lista">
+  </div>
+  <div id="listaAdmin"></div>
+</div>
+
+<script src="assets/firebase.js"></script>
+<script src="assets/app.js"></script>
+<script>
+// ---------- Acceso ----------
+// Se guarda el hash SHA-256 de la contraseña, no la contraseña en texto plano.
+// Para cambiarla: abre la consola del navegador y ejecuta
+//   crypto.subtle.digest("SHA-256", new TextEncoder().encode("nueva")).then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join("")))
+const PASS_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+
+async function sha256(s) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+let fails = 0, lockUntil = 0;
+
+function entrar() {
+  $("gate").hidden = true;
+  $("panel").hidden = false;
+  cargarJuegosAdmin();
+}
+
+$("gateForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("gateMsg");
+  if (Date.now() < lockUntil) {
+    return msg.textContent = `Demasiados intentos. Espera ${Math.ceil((lockUntil - Date.now()) / 1000)} s.`;
+  }
+  if (!crypto.subtle) return msg.textContent = "Abre la web desde https o localhost (Vercel lo hace por defecto).";
+  if (await sha256($("pass").value) === PASS_HASH) {
+    sessionStorage.setItem("ethos_admin", PASS_HASH);
+    $("pass").value = "";
+    return entrar();
+  }
+  fails++;
+  $("pass").value = "";
+  if (fails >= 5) { lockUntil = Date.now() + 30000; fails = 0; msg.textContent = "Demasiados intentos. Espera 30 s."; }
+  else msg.textContent = "Contraseña incorrecta.";
+});
+
+$("logout").onclick = () => { sessionStorage.removeItem("ethos_admin"); location.reload(); };
+
+if (sessionStorage.getItem("ethos_admin") === PASS_HASH) entrar();
+
+// ---------- Datos (mismo sistema Firestore: colección "games") ----------
+let editId = null, juegos = [];
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const nombre = $("nombre").value.trim();
+  const url = safeUrl($("url").value);
+  const category = $("category").value.trim();
+  const logoRaw = $("logo").value.trim();
+  const logo = logoRaw ? safeUrl(logoRaw) : "";
+
+  if (!nombre || !url) return toast("Nombre y una URL válida (http/https) son obligatorios", true);
+  if (logoRaw && !logo) return toast("El link del logo no es válido", true);
+
+  $("saveBtn").disabled = true;
+  try {
+    if (editId) await db.collection("games").doc(editId).update({ nombre, url, category, logo });
+    else await db.collection("games").add({ nombre, url, category, logo, timestamp: Date.now() });
+    toast("¡Juego guardado correctamente!");
+    limpiarFormulario();
+    cargarJuegosAdmin();
+  } catch (err) {
+    console.error(err);
+    toast("Error al guardar. Revisa tu conexión y las reglas de Firestore.", true);
+  } finally { $("saveBtn").disabled = false; }
+});
+
+function limpiarFormulario() {
+  $("form").reset();
+  editId = null;
+  $("cancelBtn").hidden = true;
+  $("saveBtn").textContent = "💾 GUARDAR JUEGO";
+}
+$("cancelBtn").onclick = limpiarFormulario;
+
+async function cargarJuegosAdmin() {
+  try {
+    const snap = await db.collection("games").get();
+    juegos = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+    $("total").textContent = juegos.length;
+    $("cats").innerHTML = [...new Set(juegos.map(j => j.category).filter(Boolean))]
+      .map(c => `<option value="${esc(c)}">`).join("");
+    pintarLista();
+  } catch (err) {
+    console.error(err);
+    $("listaAdmin").innerHTML = '<p class="empty error">No se pudieron cargar los juegos.</p>';
+  }
+}
+
+function pintarLista() {
+  const f = $("filtro").value.trim().toLowerCase();
+  const items = juegos.filter(j => !f || (j.nombre || "").toLowerCase().includes(f));
+  $("listaAdmin").innerHTML = items.length ? items.map(j => `
+    <div class="game-item">
+      <div class="info">
+        ${safeUrl(j.logo) ? `<img src="${esc(safeUrl(j.logo))}" alt="" loading="lazy">` : ""}
+        <div><strong>${esc(j.nombre)}</strong><br><small>${esc(j.category || "")}</small></div>
+      </div>
+      <div class="acts">
+        <button class="btn small" data-edit="${esc(j.id)}">EDITAR</button>
+        <button class="btn small danger" data-del="${esc(j.id)}">ELIMINAR</button>
+      </div>
+    </div>`).join("") : '<p class="empty">No hay juegos.</p>';
+}
+$("filtro").addEventListener("input", pintarLista);
+
+$("listaAdmin").addEventListener("click", async e => {
+  const ed = e.target.closest("[data-edit]");
+  const del = e.target.closest("[data-del]");
+  if (ed) {
+    const j = juegos.find(x => x.id === ed.dataset.edit);
+    if (!j) return;
+    editId = j.id;
+    $("nombre").value = j.nombre || "";
+    $("url").value = j.url || "";
+    $("category").value = j.category || "";
+    $("logo").value = j.logo || "";
+    $("cancelBtn").hidden = false;
+    $("saveBtn").textContent = "💾 ACTUALIZAR JUEGO";
+    scrollTo({ top: 0, behavior: "smooth" });
+    $("nombre").focus();
+  }
+  if (del) {
+    const j = juegos.find(x => x.id === del.dataset.del);
+    if (!j || !confirm(`¿Eliminar "${j.nombre}" permanentemente?`)) return;
+    try {
+      await db.collection("games").doc(j.id).delete();
+      if (editId === j.id) limpiarFormulario();
+      toast("Juego eliminado");
+      cargarJuegosAdmin();
+    } catch (err) { console.error(err); toast("Error al eliminar", true); }
+  }
+});
+</script>
+</body>
+</html>
